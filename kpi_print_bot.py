@@ -18,10 +18,10 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 					level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-
+working_directory = os.path.dirname(os.path.realpath(__file__))
 credentials = dict()
 try:
-	f = open("bot_credentials.txt", "r")
+	f = open(working_directory+"/bot_credentials.txt", "r")
 except:
 	logger.warning('bot_credentials.txt cannot be opened!')
 with f:
@@ -116,8 +116,7 @@ def order(bot, context):
 				break
 
 		file_id = doc_info.file_id
-		dir_path = os.path.dirname(os.path.realpath(__file__))
-		dl_file_path = dir_path+'/files/'+ref_num+'-'+doc_info.file_name
+		dl_file_path = working_directory+'/files/'+ref_num+'-'+doc_info.file_name
 		dl_file_name = ref_num+'-'+doc_info.file_name
 		print(dl_file_path.encode('utf-8'))
 		bot.get_file(file_id).download(dl_file_path.encode('utf-8'))
