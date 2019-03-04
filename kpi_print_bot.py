@@ -12,7 +12,11 @@ import logging
 import mysql.connector
 import datetime
 import telegram
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, MessageQueue
+from telegram.ext import Updater
+from telegram.ext import CommandHandler
+from telegram.ext import MessageHandler
+from telegram.ext import Filters
+from telegram.ext import MessageQueue
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
 					level=logging.INFO)
@@ -58,6 +62,8 @@ ALLOWED_MIMES = [
 ORDER_FAIL_MIME = ( 'К сожалению этот тип файлов не может быть распечатан.\n'+
 					'Поддерживаемые типы: doc, docx, xls, xlsx, ppt, pptx, pdf, rtf, rtx')
 ORDER_FAIL_PICTURE ='К сожалению картинки не печатаем.'
+ORDER_WAIT_1 = 'Сохраняем файл...'
+ORDER_WAIT_2 = 'Файл получен.'
 ORDER_SUCCESS = (	'Ваш заказ принят.\n'+
 					'Номер заказа: ```%s```\n'+
 					'Используйте его при оплате, получении или отмене заказа.\n'+
@@ -119,7 +125,20 @@ def order(bot, context):
 		dl_file_path = working_directory+'/files/'+ref_num+'-'+doc_info.file_name
 		dl_file_name = ref_num+'-'+doc_info.file_name
 		print(dl_file_path.encode('utf-8'))
+
+		bot.send_message(
+			chat_id=context.message.chat_id,
+			text=ORDER_WAIT_1,
+			parse_mode=telegram.ParseMode.MARKDOWN
+		)
+
 		bot.get_file(file_id).download(dl_file_path.encode('utf-8'))
+
+		bot.send_message(
+			chat_id=context.message.chat_id,
+			text=ORDER_WAIT_2,
+			parse_mode=telegram.ParseMode.MARKDOWN
+		)
 
 		db_cursor.execute(
 			"INSERT INTO orders (ordered_by, order_reference, file_name, file_id, status) VALUES (%s, %s, %s, %s, %s)",
@@ -140,6 +159,10 @@ def order(bot, context):
 
 def check(bot, context, user_data):
 	input_str = context.message.text.split(' ')
+	for i in range(0, len(input_str)):
+		input_str[i] = ''.join(c for c in input_str[i] if c.isalnum())
+	print(input_str)
+
 	if(len(input_str) >= 2):
 		ref_num = input_str[1]
 		db_cursor.execute("SELECT status FROM orders WHERE order_reference=%s", (ref_num, ))
@@ -180,6 +203,10 @@ def check(bot, context, user_data):
 
 def cancel(bot, context, user_data):
 	input_str = context.message.text.split(' ')
+	for i in range(0, len(input_str)):
+		input_str[i] = ''.join(c for c in input_str[i] if c.isalnum())
+	print(input_str)
+
 	if(len(input_str) >= 2):
 		ref_num = input_str[1]
 		db_cursor.execute("SELECT status FROM orders WHERE order_reference=%s", (ref_num, ))
@@ -253,7 +280,7 @@ def echo(bot, context, user_data):
 def error(bot, context, wut):
 	"""Log Errors caused by Updates."""
 	print(wut)
-	logger.warning('Update "%s" caused error "%s"', update, context.error)
+	logger.warning('Update "%s" caused error "%s"', bot, context.error)
 
 def main():
 	"""Start the bot."""
